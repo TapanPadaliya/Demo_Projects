@@ -1,0 +1,132 @@
+const {
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLID,
+  GraphQLList,
+  GraphQLNonNull,
+  GraphQLSchema,
+} = require("graphql");
+
+// Import MongoDB Schema
+const Admin = require("./models/AdminModel.js");
+
+// Define AdminType
+const AdminType = new GraphQLObjectType({
+  name: "Admin",
+  fields: () => ({
+    _id: { type: GraphQLID },
+    fullname: { type: GraphQLString },
+    username: { type: GraphQLString },
+    mail: { type: GraphQLString },
+    mobile: { type: GraphQLString },
+    password: { type: GraphQLString },
+    address: { type: GraphQLString },
+    pfpurl: { type: GraphQLString },
+  }),
+});
+
+// Define RootQuery
+const RootQuery = new GraphQLObjectType({
+  name: "Query",
+  fields: {
+    getAdminById: {
+      type: AdminType,
+      args: { id: { type: GraphQLID } },
+      resolve: async (parent, args) => {
+        try {
+          const admin = await Admin.findById(args.id);
+          return admin;
+        } catch (err) {
+          throw new Error("Failed to fetch admin by ID");
+        }
+      },
+    },
+    getAllAdmins: {
+      type: new GraphQLList(AdminType),
+      resolve: async (parent, args) => {
+        try {
+          const admins = await Admin.find();
+          return admins;
+        } catch (err) {
+          throw new Error("Failed to fetch all admins");
+        }
+      },
+    },
+  },
+});
+
+// Define Mutations
+const Mutations = new GraphQLObjectType({
+  name: "Mutation",
+  fields: {
+    createAdmin: {
+      type: AdminType,
+      args: {
+        adminInput: { type: new GraphQLNonNull(AdminInputType) },
+      },
+      resolve: async (parent, args) => {
+        try {
+          const admin = await Admin.create(args.adminInput);
+          return admin;
+        } catch (err) {
+          throw new Error("Failed to create admin");
+        }
+      },
+    },
+    updateAdmin: {
+      type: AdminType,
+      args: {
+        id: { type: GraphQLID },
+        adminInput: { type: new GraphQLNonNull(AdminInputType) },
+      },
+      resolve: async (parent, args) => {
+        try {
+          const admin = await Admin.findByIdAndUpdate(
+            args.id,
+            args.adminInput,
+            { new: true }
+          );
+          return admin;
+        } catch (err) {
+          throw new Error("Failed to update admin");
+        }
+      },
+    },
+    deleteAdmin: {
+      type: AdminType,
+      args: {
+        id: { type: GraphQLID },
+      },
+      resolve: async (parent, args) => {
+        try {
+          const admin = await Admin.findByIdAndDelete(args.id);
+          return admin;
+        } catch (err) {
+          throw new Error("Failed to delete admin");
+        }
+      },
+    },
+  },
+});
+
+// Define AdminInputType
+const AdminInputType = new GraphQLInputObjectType({
+  name: "AdminInput",
+  fields: () => ({
+    fullname: { type: GraphQLString },
+    username: { type: GraphQLString },
+    mail: { type: GraphQLString },
+    mobile: { type: GraphQLString },
+    password: { type: GraphQLString },
+    address: { type: GraphQLString },
+    pfpurl: { type: GraphQLString },
+  }),
+});
+
+// Define GraphQL schema
+const schema = new GraphQLSchema({
+  query: RootQuery,
+  mutation: Mutations,
+});
+
+module.exports
